@@ -15,9 +15,11 @@ public class Move {
     public int getPosX() {
         return posX;
     }
+
     public int getPosY() {
         return posY;
     }
+
     public bool getTempVerticalPlayer() {
         return tempVerticalPlayer;
     }

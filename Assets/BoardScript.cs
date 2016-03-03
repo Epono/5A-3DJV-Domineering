@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using System;
 
 public class BoardScript : MonoBehaviour {
 
@@ -14,11 +14,14 @@ public class BoardScript : MonoBehaviour {
     [SerializeField]
     Text text;
 
-    bool verticalPlayer = true;
+    [SerializeField]
+    Text winnerText;
+
+    bool isVerticalPlayer = true;
 
     Move move;
 
-    public enum algos { Minimax, Negamax, AlphaBetaMinimax, AlphaBetaNegamax };
+    public enum algos { Minimax, Negamax, AlphaBetaMinimax, AlphaBetaNegamax, KillerNegamax };
 
     [SerializeField]
     algos algo;
@@ -27,6 +30,8 @@ public class BoardScript : MonoBehaviour {
     int depth = 1, alpha = 1, beta = 1;
 
     CellScript[][] cellScriptsTable = new CellScript[8][];
+
+    int countInit = 0;
 
     CellScript getCellOld(int posX, int posY) {
         foreach(CellScript cellScript in cellScripts) {
@@ -46,10 +51,6 @@ public class BoardScript : MonoBehaviour {
         }
     }
 
-    void Start() {
-
-    }
-
     void Init() {
         for(int x = 0; x < 8; ++x) {
             cellScriptsTable[x] = new CellScript[8];
@@ -57,15 +58,16 @@ public class BoardScript : MonoBehaviour {
                 cellScriptsTable[x][y] = getCellOld(x, y);
             }
         }
-
-        for(int x = 0; x < 8; ++x) {
-            for(int y = 0; y < 8; ++y) {
-                Debug.Log(cellScriptsTable[x][y].posX + ", " + cellScriptsTable[x][y].posY);
-            }
-        }
     }
 
     void Update() {
+        if(countInit < 10) {
+            countInit++;
+        }
+        if(countInit == 10) {
+            countInit++;
+            Init();
+        }
         if(Input.GetKeyDown(KeyCode.Return)) {
             switch(algo) {
                 case algos.Minimax:
@@ -80,12 +82,21 @@ public class BoardScript : MonoBehaviour {
                 case algos.AlphaBetaNegamax:
                     AlphaBetaNegamax(depth, alpha, beta);
                     break;
+                case algos.KillerNegamax:
+                    InitKillerMoveTab();
+                    KillerNegaMax(depth, depth, alpha, beta);
+                    break;
             }
 
             onMouseDown(move.getPosX(), move.getPosY());
 
-            if(getPossibilitiesCount(verticalPlayer) == 0) {
-
+            if(getPossibilitiesCount(isVerticalPlayer) == 0) {
+                winnerText.enabled = true;
+                if(isVerticalPlayer) {
+                    winnerText.text = "Le joueur vertical a perdu !";
+                } else {
+                    winnerText.text = "Le joueur horizontal a perdu !";
+                }
             }
         } else if(Input.GetKeyDown(KeyCode.A)) {
             Init();
@@ -95,7 +106,7 @@ public class BoardScript : MonoBehaviour {
 
     public void onMouseOver(int posX, int posY) {
         CellScript cellScript = getCell(posX, posY);
-        CellScript cellScript2 = getCell(posX + (verticalPlayer ? 0 : 1), posY + (verticalPlayer ? 1 : 0));
+        CellScript cellScript2 = getCell(posX + (isVerticalPlayer ? 0 : 1), posY + (isVerticalPlayer ? 1 : 0));
 
         if(cellScript != null && cellScript2 != null && !cellScript.isClicked && !cellScript2.isClicked) {
             cellScript.material.color = Color.white;
@@ -105,10 +116,10 @@ public class BoardScript : MonoBehaviour {
 
     public void onMouseDown(int posX, int posY) {
         CellScript cellScript = getCell(posX, posY);
-        CellScript cellScript2 = getCell(posX + (verticalPlayer ? 0 : 1), posY + (verticalPlayer ? 1 : 0));
+        CellScript cellScript2 = getCell(posX + (isVerticalPlayer ? 0 : 1), posY + (isVerticalPlayer ? 1 : 0));
 
         if(cellScript != null && cellScript2 != null && !cellScript.isClicked && !cellScript2.isClicked) {
-            verticalPlayer = !verticalPlayer;
+            isVerticalPlayer = !isVerticalPlayer;
 
             cellScript.material.color = Color.blue;
             cellScript.isClicked = true;
@@ -124,7 +135,7 @@ public class BoardScript : MonoBehaviour {
 
     public void onMouseExit(int posX, int posY) {
         CellScript cellScript = getCell(posX, posY);
-        CellScript cellScript2 = getCell(posX + (verticalPlayer ? 0 : 1), posY + (verticalPlayer ? 1 : 0));
+        CellScript cellScript2 = getCell(posX + (isVerticalPlayer ? 0 : 1), posY + (isVerticalPlayer ? 1 : 0));
 
         if(cellScript != null && !cellScript.isClicked) {
             cellScript.material.color = Color.black;
@@ -163,6 +174,9 @@ public class BoardScript : MonoBehaviour {
     }
 
     bool isValidMove(Move move) {
+        if(move == null) {
+            return false;
+        }
         int posX = move.getPosX();
         int posY = move.getPosY();
         bool tempVerticalPlayer = move.getTempVerticalPlayer();
@@ -179,7 +193,7 @@ public class BoardScript : MonoBehaviour {
         bool tempVerticalPlayer = move.getTempVerticalPlayer();
 
         CellScript cellScript = getCell(posX, posY);
-        CellScript cellScript2 = getCell(posX + (verticalPlayer ? 0 : 1), posY + (verticalPlayer ? 1 : 0));
+        CellScript cellScript2 = getCell(posX + (tempVerticalPlayer ? 0 : 1), posY + (tempVerticalPlayer ? 1 : 0));
 
         cellScript.isClicked = true;
         cellScript2.isClicked = true;
@@ -191,7 +205,7 @@ public class BoardScript : MonoBehaviour {
         bool tempVerticalPlayer = move.getTempVerticalPlayer();
 
         CellScript cellScript = getCell(posX, posY);
-        CellScript cellScript2 = getCell(posX + (verticalPlayer ? 0 : 1), posY + (verticalPlayer ? 1 : 0));
+        CellScript cellScript2 = getCell(posX + (tempVerticalPlayer ? 0 : 1), posY + (tempVerticalPlayer ? 1 : 0));
 
         cellScript.isClicked = false;
         cellScript2.isClicked = false;
@@ -207,10 +221,10 @@ public class BoardScript : MonoBehaviour {
     //////////////////////////////////////////////////////////////////////////// Minimax
     int MinimaxMax(int depth) {
         if(depth == 0) {
-            return evaluate(verticalPlayer);
+            return evaluate(isVerticalPlayer);
         }
         int eval = int.MinValue;
-        List<Move> moves = getPossibilities(verticalPlayer);
+        List<Move> moves = getPossibilities(isVerticalPlayer);
         foreach(Move m in moves) {
             play(m);
             int e = MinimaxMin(depth - 1);
@@ -226,10 +240,10 @@ public class BoardScript : MonoBehaviour {
 
     int MinimaxMin(int depth) {
         if(depth == 0) {
-            return evaluate(verticalPlayer);
+            return evaluate(isVerticalPlayer);
         }
         int eval = int.MaxValue;
-        List<Move> moves = getPossibilities(verticalPlayer);
+        List<Move> moves = getPossibilities(isVerticalPlayer);
         foreach(Move m in moves) {
             play(m);
             int e = MinimaxMax(depth - 1);
@@ -246,10 +260,10 @@ public class BoardScript : MonoBehaviour {
     //////////////////////////////////////////////////////////////////////////// Negamax
     int Negamax(int depth) {
         if(depth == 0) {
-            return evaluate(verticalPlayer);
+            return evaluate(isVerticalPlayer);
         }
         int eval = int.MinValue;
-        List<Move> moves = getPossibilities(verticalPlayer);
+        List<Move> moves = getPossibilities(isVerticalPlayer);
         foreach(Move m in moves) {
             play(m);
             int e = -Negamax(depth - 1);
@@ -266,9 +280,9 @@ public class BoardScript : MonoBehaviour {
     //////////////////////////////////////////////////////////////////////////// Alpha-Beta Minimax
     int AlphaBetaMax(int depth, int alpha, int beta) {
         if(depth == 0) {
-            return evaluate(verticalPlayer);
+            return evaluate(isVerticalPlayer);
         }
-        List<Move> moves = getPossibilities(verticalPlayer);
+        List<Move> moves = getPossibilities(isVerticalPlayer);
         foreach(Move m in moves) {
             play(m);
             int e = AlphaBetaMin(depth - 1, alpha, beta);
@@ -278,7 +292,7 @@ public class BoardScript : MonoBehaviour {
                 move = m;
                 if(alpha >= beta) {
                     // ?
-                    //move = m;
+                    move = m;
                     return beta;
                 }
             }
@@ -289,9 +303,9 @@ public class BoardScript : MonoBehaviour {
 
     int AlphaBetaMin(int depth, int alpha, int beta) {
         if(depth == 0) {
-            return evaluate(verticalPlayer);
+            return evaluate(isVerticalPlayer);
         }
-        List<Move> moves = getPossibilities(verticalPlayer);
+        List<Move> moves = getPossibilities(isVerticalPlayer);
         foreach(Move m in moves) {
             play(m);
             int e = AlphaBetaMax(depth - 1, alpha, beta);
@@ -301,7 +315,7 @@ public class BoardScript : MonoBehaviour {
                 move = m;
                 if(alpha >= beta) {
                     // ?
-                    //move = m;
+                    move = m;
                     return alpha;
                 }
             }
@@ -313,9 +327,10 @@ public class BoardScript : MonoBehaviour {
     //////////////////////////////////////////////////////////////////////////// Alpha-Beta Negamax
     int AlphaBetaNegamax(int depth, int alpha, int beta) {
         if(depth == 0) {
-            return evaluate(verticalPlayer);
+            return evaluate(isVerticalPlayer);
         }
-        List<Move> moves = getPossibilities(verticalPlayer);
+
+        List<Move> moves = getPossibilities(isVerticalPlayer);
         foreach(Move m in moves) {
             play(m);
             int e = -AlphaBetaNegamax(depth - 1, -beta, -alpha);
@@ -325,7 +340,42 @@ public class BoardScript : MonoBehaviour {
                 move = m;
                 if(alpha >= beta) {
                     // ?
-                    //move = m;
+                    move = m;
+                    return beta;
+                }
+            }
+        }
+
+        return alpha;
+    }
+
+    //////////////////////////////////////////////////////////////////////////// Alpha-Beta Negamax
+    public Move[] killerMoveTab= new Move[16];
+
+    void InitKillerMoveTab() {
+        killerMoveTab = new Move[16];
+    }
+
+    int KillerNegaMax(int rootDepth, int depth, int alpha, int beta) {
+        if(depth == 0) {
+            return evaluate(isVerticalPlayer);
+        }
+        List<Move> moves = getPossibilities(isVerticalPlayer);
+        Move killer = killerMoveTab[rootDepth - depth];
+        if(isValidMove(killer)) {
+            moves.Insert(0, killer);
+        }
+
+        foreach(Move m in moves) {
+            play(m);
+            int e = -KillerNegaMax(rootDepth, depth - 1, -beta, -alpha);
+            undo(m);
+            if(e > alpha) {
+                alpha = e;
+                move = killer;
+
+                if(alpha >= beta) {
+                    killerMoveTab[rootDepth - depth] = m;
                     return beta;
                 }
             }
