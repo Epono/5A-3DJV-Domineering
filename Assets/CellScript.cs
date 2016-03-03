@@ -9,6 +9,7 @@ public class CellScript : MonoBehaviour {
     public int posX, posY;
 
     public bool isClicked = false;
+    public bool isTrigger = true;
 
     public Material material;
 
@@ -18,19 +19,21 @@ public class CellScript : MonoBehaviour {
         material = gameObject.GetComponent<Renderer>().material;
     }
 
-    void Update() {
-
-    }
-
     void OnMouseOver() {
-        boardScript.onMouseOver(posX, posY);
+        if(isTrigger) {
+            boardScript.onMouseOver(posX, posY);
+        }
     }
 
     void OnMouseExit() {
-        boardScript.onMouseExit(posX, posY);
+        if(isTrigger) {
+            boardScript.onMouseExit(posX, posY);
+        }
     }
 
     void OnMouseDown() {
-        boardScript.onMouseDown(posX, posY);
+        if(isTrigger) {
+            boardScript.onMouseDown(posX, posY);
+        }
     }
 }
