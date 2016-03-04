@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine.UI;
 using System;
+using System.Timers;
 
 public class BoardScript : MonoBehaviour {
 
@@ -21,7 +22,7 @@ public class BoardScript : MonoBehaviour {
 
     Move move;
 
-    public enum algos { Minimax, Negamax, AlphaBetaMinimax, AlphaBetaNegamax, KillerNegamax };
+    public enum algos { Minimax, Negamax, AlphaBetaMinimax, AlphaBetaNegamax, KillerNegamax, KillerNegamaxTimer };
 
     [SerializeField]
     algos algo;
@@ -32,6 +33,12 @@ public class BoardScript : MonoBehaviour {
     CellScript[][] cellScriptsTable = new CellScript[8][];
 
     int countInit = 0;
+
+    List<GameObject> objectsTemp = new List<GameObject>();
+
+    Timer t = new Timer();
+
+    bool timerElapsed = false;
 
     CellScript getCellOld(int posX, int posY) {
         foreach(CellScript cellScript in cellScripts) {
@@ -56,6 +63,28 @@ public class BoardScript : MonoBehaviour {
             cellScriptsTable[x] = new CellScript[8];
             for(int y = 0; y < 8; ++y) {
                 cellScriptsTable[x][y] = getCellOld(x, y);
+            }
+        }
+    }
+
+    void Start() {
+        t.Interval = 10000; // specify interval time as you want
+        t.Elapsed += new ElapsedEventHandler(OnTimedEvent);
+    }
+
+    void Reset() {
+        isVerticalPlayer = true;
+        winnerText.enabled = false;
+
+        foreach(GameObject go in objectsTemp) {
+            Destroy(go);
+        }
+        objectsTemp = new List<GameObject>();
+
+        for(int x = 0; x < 8; ++x) {
+            for(int y = 0; y < 8; ++y) {
+                cellScriptsTable[x][y].isClicked = false;
+                cellScriptsTable[x][y].material.color = Color.black;
             }
         }
     }
@@ -86,6 +115,16 @@ public class BoardScript : MonoBehaviour {
                     InitKillerMoveTab();
                     KillerNegaMax(depth, depth, alpha, beta);
                     break;
+                case algos.KillerNegamaxTimer:
+                    InitKillerMoveTab();
+                    t.Start();
+                    int i = 1;
+                    while(KillerNegaMaxTimer(i, i, alpha, beta) != 0) {
+                        i++;
+                    }
+                    timerElapsed = false;
+                    t.Stop();
+                    break;
             }
 
             onMouseDown(move.getPosX(), move.getPosY());
@@ -99,7 +138,9 @@ public class BoardScript : MonoBehaviour {
                 }
             }
         } else if(Input.GetKeyDown(KeyCode.A)) {
-            Init();
+            t.Start();
+        } else if(Input.GetKeyDown(KeyCode.Z)) {
+            Reset();
         }
         text.text = "Possibilités joueur vertical : " + getPossibilitiesCount(true) + "\n" + "Possibilités joueur horizontal : " + getPossibilitiesCount(false);
     }
@@ -129,6 +170,7 @@ public class BoardScript : MonoBehaviour {
             GameObject go = (GameObject)Instantiate(prefab, new Vector3((cellScript.gameObject.transform.position.x + cellScript2.transform.position.x) / 2, (cellScript.gameObject.transform.position.y + cellScript2.transform.position.y) / 2, 0), Quaternion.identity);
             go.GetComponent<Renderer>().material.color = Color.blue;
             CellScript temp = go.GetComponent<CellScript>();
+            objectsTemp.Add(go);
             temp.isTrigger = false;
         }
     }
@@ -382,5 +424,46 @@ public class BoardScript : MonoBehaviour {
         }
 
         return alpha;
+    }
+
+    int KillerNegaMaxTimer(int rootDepth, int depth, int alpha, int beta) {
+        if(timerElapsed) {
+            return 0;
+        }
+        if(depth == 0) {
+            return evaluate(isVerticalPlayer);
+        }
+        List<Move> moves = getPossibilities(isVerticalPlayer);
+        Move killer = killerMoveTab[rootDepth - depth];
+        if(isValidMove(killer)) {
+            moves.Insert(0, killer);
+        }
+
+        foreach(Move m in moves) {
+            if(timerElapsed) {
+                return 0;
+            }
+            play(m);
+            int e = -KillerNegaMax(rootDepth, depth - 1, -beta, -alpha);
+            if(timerElapsed) {
+                return 0;
+            }
+            undo(m);
+            if(e > alpha) {
+                alpha = e;
+                move = killer;
+
+                if(alpha >= beta) {
+                    killerMoveTab[rootDepth - depth] = m;
+                    return beta;
+                }
+            }
+        }
+
+        return alpha;
+    }
+
+    void OnTimedEvent(object source, ElapsedEventArgs e) {
+        timerElapsed = true;
     }
 }

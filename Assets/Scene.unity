@@ -3074,10 +3074,10 @@ MonoBehaviour:
   prefab: {fileID: 169616, guid: d2f3c75c7c5221c409d05e6b1f68799f, type: 2}
   text: {fileID: 1191490312}
   winnerText: {fileID: 1589774396}
-  algo: 2
-  depth: 1
-  alpha: 1
-  beta: 100
+  algo: 4
+  depth: 2
+  alpha: -50000
+  beta: 50000
 --- !u!4 &1218449840
 Transform:
   m_ObjectHideFlags: 0
