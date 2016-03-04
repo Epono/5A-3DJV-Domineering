@@ -392,10 +392,10 @@ public class BoardScript : MonoBehaviour {
     }
 
     //////////////////////////////////////////////////////////////////////////// Alpha-Beta Negamax
-    public Move[] killerMoveTab= new Move[16];
+    public Move[] killerMovesTab= new Move[16];
 
     void InitKillerMoveTab() {
-        killerMoveTab = new Move[16];
+        killerMovesTab = new Move[16];
     }
 
     int KillerNegaMax(int rootDepth, int depth, int alpha, int beta) {
@@ -403,7 +403,7 @@ public class BoardScript : MonoBehaviour {
             return evaluate(isVerticalPlayer);
         }
         List<Move> moves = getPossibilities(isVerticalPlayer);
-        Move killer = killerMoveTab[rootDepth - depth];
+        Move killer = killerMovesTab[rootDepth - depth];
         if(isValidMove(killer)) {
             moves.Insert(0, killer);
         }
@@ -417,7 +417,7 @@ public class BoardScript : MonoBehaviour {
                 move = killer;
 
                 if(alpha >= beta) {
-                    killerMoveTab[rootDepth - depth] = m;
+                    killerMovesTab[rootDepth - depth] = m;
                     return beta;
                 }
             }
@@ -434,7 +434,7 @@ public class BoardScript : MonoBehaviour {
             return evaluate(isVerticalPlayer);
         }
         List<Move> moves = getPossibilities(isVerticalPlayer);
-        Move killer = killerMoveTab[rootDepth - depth];
+        Move killer = killerMovesTab[rootDepth - depth];
         if(isValidMove(killer)) {
             moves.Insert(0, killer);
         }
@@ -454,7 +454,7 @@ public class BoardScript : MonoBehaviour {
                 move = killer;
 
                 if(alpha >= beta) {
-                    killerMoveTab[rootDepth - depth] = m;
+                    killerMovesTab[rootDepth - depth] = m;
                     return beta;
                 }
             }
@@ -468,6 +468,8 @@ public class BoardScript : MonoBehaviour {
     }
 
     //////////////////////////////////////////////////////////////////////////// Alpha-Beta Heuristique Negamax
+    int[] history = new int[10000];
+
     int AlphaBetaHeuristicNegamax(int depth, int alpha, int beta) {
         if(depth == 0) {
             return evaluate(isVerticalPlayer);
@@ -485,6 +487,7 @@ public class BoardScript : MonoBehaviour {
                 move = m;
                 if(alpha >= beta) {
                     // history[code(m)] += 4^depth
+                    history[m.getPosX() * 10 + 100 * m.getPosY() + (isVerticalPlayer ? 1 : 0)] += (int)Math.Pow(4, depth);
                     move = m;
                     return beta;
                 }
