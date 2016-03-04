@@ -466,4 +466,31 @@ public class BoardScript : MonoBehaviour {
     void OnTimedEvent(object source, ElapsedEventArgs e) {
         timerElapsed = true;
     }
+
+    //////////////////////////////////////////////////////////////////////////// Alpha-Beta Heuristique Negamax
+    int AlphaBetaHeuristicNegamax(int depth, int alpha, int beta) {
+        if(depth == 0) {
+            return evaluate(isVerticalPlayer);
+        }
+
+        List<Move> moves = getPossibilities(isVerticalPlayer);
+        // sort
+
+        foreach(Move m in moves) {
+            play(m);
+            int e = -AlphaBetaHeuristicNegamax(depth - 1, -beta, -alpha);
+            undo(m);
+            if(e > alpha) {
+                alpha = e;
+                move = m;
+                if(alpha >= beta) {
+                    // history[code(m)] += 4^depth
+                    move = m;
+                    return beta;
+                }
+            }
+        }
+
+        return alpha;
+    }
 }
